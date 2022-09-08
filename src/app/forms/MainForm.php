@@ -12,28 +12,48 @@ use php\time\Timer;
 class MainForm extends AbstractForm {
 
     public $uiState         = true,
-           $currentVersion  = "1.0.0",
+           $currentVersion  = "1.0.1",
            $versionUrl      = "https://raw.githubusercontent.com/vsyakoedlyavw/VWFR/main/info.json",
            $createReportUrl = "https://forum.vimeworld.com/forum/41-%D0%B6%D0%B0%D0%BB%D0%BE%D0%B1%D1%8B-%D0%BD%D0%B0-%D0%B8%D0%B3%D1%80%D0%BE%D0%BA%D0%BE%D0%B2/?do=add",
-           $userAgentUrl    = "https://whatsmyua.info";
+           $userAgentUrl    = "https://whatsmyua.info",
+           $imgurCids       = ["ec61be071b16841", "ad338f3eaae9baa", "9f3460e67f308f6", "65bfadb95e040a0", "2421109ee0e8d3d", "c37fc05199a05b7", "70ff50b8dfc3a53", "886730f5763b437", "6cf1cd6f95fe7c8", "4408bab9df4233c"];
 
-    function checkUpdates()
+    function checkUpdates($try = 0)
     {
         new Thread(function () {
             if (is_array($verInfo = json_decode(trim(file_get_contents($this->versionUrl)), true))) {
                 if ($this->currentVersion != $verInfo["actualVersion"] && $verInfo["updateAdvice"]) {
                     uiLater(function () use ($verInfo) {
                         $dialog = new UXAlert("CONFIRMATION");
-                        $dialog->title = "Обновление";
-                        $dialog->headerText = "Доступно обновление!";
+                        $dialog->title = $this->title . " | Обновление";
+                        $dialog->headerText = "Доступно обновление!" . str_repeat(" ", 50); //костыль для расширения окна алерта, без этого текст первой кнопки почему-то не вмещается полностью
                         $dialog->contentText = "Текущая версия: " . $this->currentVersion . PHP_EOL .
-                        "Новая версия: " . $verInfo["actualVersion"] .
-                        " [изменения: " . (!$verInfo["changelog"] ? "неизвестно" : $verInfo["changelog"]) . "]";
-                        $dialog->setButtonTypes($buttons = ["Скачать обновление", "Позже"]);
-                        if ($dialog->showAndWait() == $buttons[0]) open($verInfo["downloadUrl"]);
+                        "Новая версия: " . $verInfo["actualVersion"] . " [изменения: " . (!$verInfo["changelog"] ? "неизвестно" : $verInfo["changelog"]) . "]";
+                        $dialog->setButtonTypes($buttons = ["Обновить автоматически", "Позже"]);
+
+                        if ($dialog->showAndWait() == $buttons[0]) {
+                            $taskkill = execute('taskkill /f /t /fi "WINDOWTITLE eq Updater" /im javaw.exe');
+                            if (str::contains($taskkill->getInput()->readFully(), "SUCCESS")) wait("3s");
+                            $exePath = substr($GLOBALS["argv"][0], 1);
+                            $dirPath = explode("/", $exePath);
+                            $exeName = array_pop($dirPath);
+                            $copyPath = implode("/", $dirPath) . "/UpdaterCopy.exe";
+                            fs::copy($exePath, $copyPath);
+
+                            if (fs::exists(fs::abs("./UpdaterCopy.exe"))) {
+                                $this->toast("Запуск апдейтера, подождите...");
+                                execute('UpdaterCopy.exe runUpdater "' . $exeName . '" "' . $verInfo["actualVersion"] . '" "' . fs::hash($exePath) . '"');
+                                app()->shutdown();
+                            } else {
+                                $this->toast("Не удалось создать копию программы для запуска апдейтера о.О" . PHP_EOL .
+                                "Пожалуйста, скачайте обновление вручную по открывшейся ссылке или из темы программы.");
+                                open($verInfo["downloadUrl"]);
+                            }
+                        }
                     });
                 }
-            }
+                if ($cids = $verInfo["imgurCids"]) $this->imgurCids = $cids;
+             }
         })->start();
     }
 
@@ -79,6 +99,20 @@ class MainForm extends AbstractForm {
         $this->date->text = Time::now(TimeZone::of("Europe/Moscow"))->add(["day" => $days])->toString("dd.MM.yyyy");
     }
 
+    function setTimerUntilNewDay() //автосмена даты в текстовом поле с наступлением нового дня, для забывчивых как я
+    {
+        $msk = Time::now(TimeZone::of("Europe/Moscow"));
+        $mskNext = $msk->add(["day" => 1])->toString("dd.MM.yyyy");
+        $secUntil = ceil((new TimeFormat("dd.MM.yyyy")->parse($mskNext, TimeZone::of("Europe/Moscow"))->getTime() - $msk->getTime()) / 1000) + 10;
+        if ($secUntil > 0 && $secUntil < 86420) {
+            $secUntil .= "s";
+            Timer::after($secUntil, function () {
+                $this->setDate();
+                $this->setTimerUntilNewDay();
+            });
+        }
+    }
+
     function changeIni($param, $val, $doToast = false, $textToast = "Сохранено")
     {
         $this->ini->set($param, $val);
@@ -86,10 +120,10 @@ class MainForm extends AbstractForm {
         if ($doToast) $this->toast($textToast);
     }
 
-    function changeUiState($state = true)
+    function changeUiState($state = true, $full = false)
     {
         foreach ($this->children as $object) {
-            if (!in_array($object->id, ["labelCookie", "cookie", "buttonCheckCookie", "labelAuthor"])) {
+            if (!in_array($object->id, ["labelCookie", "cookie", "buttonCheckCookie", "labelAuthor"]) || $full) {
                  $object->enabled = $state;
                  if (str::contains($object->id, "button")) $object->opacity = ($state ? 1 : 0.5);
                  if (str::contains($object->id, "day") || str::contains($object->id, "separator")) $object->opacity = ($state ? 0.66 : 0.33);
@@ -123,7 +157,7 @@ class MainForm extends AbstractForm {
                 $delHttpClient->headers = ["Authorization" => "Client-ID " . $this->lastAlbum["clientId"]];
                 foreach ($this->lastAlbum["deletehashes"] as $deletehash) {
                     $delHttpClient->delete("https://api.imgur.com/3/image/" . $deletehash);
-                    wait(1000);
+                    wait("1s");
                 }
                 $delHttpClient->delete("https://api.imgur.com/3/album/" . $this->lastAlbum["deletehash"]);
             }
@@ -133,17 +167,17 @@ class MainForm extends AbstractForm {
     function testCookie($cookie, $fromReport = true, $formUnlock = false)
     {
         $forumHttpClient = new HttpClient();
-        $headers["Cookie"] = ($this->cookie->text = str_replace("cookie: ", "", $this->cookie->text));
+        $headers["Cookie"] = ($this->cookie->text = str_ireplace("cookie: ", "", $this->cookie->text));
         if ($userAgent = $this->ini->get("useragent")) $headers["User-Agent"] = $userAgent;
         $forumHttpClient->headers = $headers;
         $response = $forumHttpClient->get($this->createReportUrl)->body();
         $jSoup = Jsoup::parseText($response);
 
-        if (str::startsWith($jSoup->title(), "Please Wait")) {
+        if (str::startsWith($jSoup->title(), "Please Wait") || str::startsWith($jSoup->title(), "Just a moment") || str::startsWith($jSoup->select(".ray-id")->html(), "Ray ID")) {
             $dialog = new UXAlert("WARNING");
-            $dialog->title = "Что-то пошло не так...";
+            $dialog->title = $this->title . " | Что-то пошло не так...";
             $dialog->headerText = "Cloudflare не даёт доступ к форуму :C";
-            $dialog->contentText = "Если вы используете в данный момент VPN, то просто отключите его для продолжения работы." . PHP_EOL .
+            $dialog->contentText = "Если вы используете в данный момент VPN (в виде программы или браузерного расширения), то просто отключите его для продолжения работы." . PHP_EOL .
             "В ином случае, " . ($userAgent ? "получите Cookie заново (после пройденной проверки Cloudflare) и " : "") . "укажите в поле ниже ваш User-Agent браузера:";
             $uaText = new UXTextField(); $uaLabel = new UXLabel(); $urlButton = new UXButton();
             if ($userAgent) {
@@ -155,9 +189,10 @@ class MainForm extends AbstractForm {
             $urlButton->text = "Как его узнать?";
             $urlButton->cursor = "HAND";
             $urlButton->textColor = "#4d66cc";
-            $urlButton->on("action", function () {
+            $urlButton->on("click", function () {
                 UXClipboard::setText($this->userAgentUrl);
-                UXDialog::show("В буфер обмена помещена ссылка (" . $this->userAgentUrl . "), откройте её в браузере, в котором выполнен вход на форум и скопируйте User-Agent из текстового поля.");
+                UXDialog::show("В буфер обмена помещена ссылка (" . $this->userAgentUrl . "), откройте её в браузере, в котором выполнен вход на форум и скопируйте User-Agent из текстового поля." . PHP_EOL .
+                "Либо же просто загуглите: my user agent");
             });
             $root = new UXVBox($userAgent ? [$cookieLabel, $cookieText, $uaLabel, $uaText, $urlButton] : [$uaLabel, $uaText, $urlButton]);
             $root->spacing = 5;
@@ -167,11 +202,13 @@ class MainForm extends AbstractForm {
             $dialog->setButtonTypes($buttons = ["Сохранить", "Закрыть"]);
             if ($dialog->showAndWait() == $buttons[1])
                 return $this->toast("Вы отменили " . ($fromReport ? "публикацию жалобы" : "проверку"), 1500);
+            $uaText->text = str_ireplace("user-agent: ", "", $uaText->text);
             $this->changeIni("useragent", $uaText->text);
             if ($userAgent) {
+                $cookieText->text = str_ireplace("cookie: ", "", $cookieText->text);
                 if (is_bool($missing = $this->checkCookieString($cookieText->text))) {
-                    $this->changeIni("cookie", $cookieText->text);
                     $this->cookie->text = $cookieText->text;
+                    $this->changeIni("cookie", $cookieText->text);
                 } else return UXDialog::show($missing, "ERROR");
             }
             return $this->toast("Сохранено, попробуйте " . ($fromReport ? "создать жалобу" : "выполнить проверку") . " ещё раз", 1500);
@@ -181,8 +218,10 @@ class MainForm extends AbstractForm {
         $plupload = $jSoup->select("input[name=plupload]")->attr("value");
         if ($jSoup->select("a[id=elUserSignIn]")->hasAttr("href"))
             return $this->toast("Cookie недействительны" . ($fromReport ? ", обновите их" : ". Возможно, вы не авторизованы на форуме?"));
-        if (strlen($csrfKey) <> 32 || strlen($plupload) <> 32)
-            return $this->toast("Не удалось получить нужные данные с форума о.О" . PHP_EOL . "Попробуйте обновить Cookie / проверить соединение с интернетом / повторить попытку.");
+        if (strlen($csrfKey) <> 32 || strlen($plupload) <> 32) {
+            $this->toast("Не удалось получить нужные данные с форума о.О" . PHP_EOL . "Попробуйте обновить Cookie / проверить соединение с интернетом / повторить попытку.");
+            return file_put_contents("debug.log", $response);
+        }
 
         $this->changeIni("cookie", $this->cookie->text);
         if ($formUnlock) $this->changeUiState();
@@ -194,17 +233,19 @@ class MainForm extends AbstractForm {
 
     function uploadImages($filesToUpload)
     {
-        $errorMsgs = ["Не удалось загрузить изображение на Imgur o.O", "Imgur возвратил ошибку "];
-        $cIds = ["ec61be071b16841", "ad338f3eaae9baa", "9f3460e67f308f6", "65bfadb95e040a0", "2421109ee0e8d3d", "c37fc05199a05b7", "70ff50b8dfc3a53", "886730f5763b437", "6cf1cd6f95fe7c8", "4408bab9df4233c"];
+        $errorMsgs = ["Не удалось загрузить изображение на Imgur o.О" . PHP_EOL . "Попробуйте ещё раз", "Imgur возвратил ошибку "];
         $imgHttpClient = new HttpClient();
-        $imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $cIds[array_rand($cIds)])];
+        $imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $this->imgurCids[array_rand($this->imgurCids)])];
+        //$imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $this->imgurCids[9])];
         $imgHttpClient->requestType = "MULTIPART";
         foreach ($filesToUpload as $file) {
             $response = $imgHttpClient->post("https://api.imgur.com/3/image/", ["image" => new File($file), "description" => ($file == end($filesToUpload) ? "VWFR was here &#10024;" : "")])->body();
             $jsonRes = json_decode($response, true)["data"];
-            if (!$dh = $jsonRes["deletehash"])
-                return (!$eCode = $jsonRes["error"]["code"] && !$eMessage = $jsonRes["error"]["message"])
+            if (!$dh = $jsonRes["deletehash"]) {
+                file_put_contents("debug.log", PHP_EOL . PHP_EOL . $response, FILE_APPEND);
+                return (!($eCode = $jsonRes["error"]["code"]) && !($eMessage = $jsonRes["error"]["message"]))
                 ? $this->toast($errorMsgs[0]) : $this->toast($errorMsgs[1] . $eCode . ":" . PHP_EOL . $eMessage);
+            }
             $deletehashes[] = $dh;
         }
         $imgHttpClient->requestType = "URLENCODE";
@@ -220,7 +261,7 @@ class MainForm extends AbstractForm {
     {
         if (!is_array($latest = $this->getLatestScr($this->numberField->value)))
             return false;
-        if (!parse_url($imgUrl = $this->uploadImages($latest)))
+        if (!parse_url($imgUrl = $this->uploadImages($latest))["host"] || !$imgUrl)
             return false;
 
         $data = ["form_submitted" => 1,
@@ -237,7 +278,7 @@ class MainForm extends AbstractForm {
 
         if ($this->checkbox->selected) {
             $dialog = new UXAlert("CONFIRMATION");
-            $dialog->title = "Подтверждение";
+            $dialog->title = $this->title . " | Подтверждение";
             $dialog->headerText = "Почти готово, публиковать на форум?";
             $dialog->contentText = "[Заголовок:]" . PHP_EOL . " " . $this->myTitle->text . PHP_EOL . PHP_EOL . "[Жалоба:]" . PHP_EOL . 
             " 1. " . $this->nick->text . PHP_EOL . " 2. " . $this->myNick->text .  PHP_EOL . " 3. " . $this->date->text . PHP_EOL . " 4. " . $imgUrl . PHP_EOL;
@@ -245,7 +286,7 @@ class MainForm extends AbstractForm {
             $urlButton->text = "Открыть ссылку на скриншот(ы) в браузере";
             $urlButton->cursor = "HAND";
             $urlButton->textColor = "#4d66cc";
-            $urlButton->on("action", function () use ($imgUrl) {
+            $urlButton->on("click", function () use ($imgUrl) {
                 open($imgUrl);
             });
             $root = new UXVBox([$urlButton]);
@@ -261,23 +302,23 @@ class MainForm extends AbstractForm {
         $this->changeIni("checkbox", $this->checkbox->selected);
 
         $forumHttpClient->followRedirects = false;
-        $postRequest = $forumHttpClient->post($this->createReportUrl, $data);
-        if (str::startsWith($location = $postRequest->header("Location"), "https://forum.vimeworld.com/topic/")) {
-            $toast = new UXTooltip();
+        $createRequest = $forumHttpClient->post($this->createReportUrl, $data);
+        if (str::startsWith($location = $createRequest->header("Location"), "https://forum.vimeworld.com/topic/")) {
             $labelSuccess = new UXLabel();
             $labelSuccess->text = "Жалоба опубликована и доступна по ссылке:";
             $labelLink = new UXLabel();
-            $labelLink->text = explode("-", $location)[0] . "-";
+            $labelLink->text = explode("-", $location)[0];
             $labelLink->underline = true;
             $labelLink->cursor = "HAND";
             $labelLink->on("click", function() use ($labelLink) {
                 open($labelLink->text);
             });
+            $toast = new UXTooltip();
             $toast->graphic = new UXVBox([$labelSuccess, $labelLink]);
             $toast->opacity = 0;
             $toast->show($this, $this->x + $this->width / 2 - $toast->font->calculateTextWidth($labelSuccess->text) / 2, $this->y + $this->height / 2 - $toast->font->lineHeight * 2 / 2);
             Animation::fadeIn($toast, 500, function () use ($toast) {
-                waitAsync(2000, function () use ($toast) {
+                waitAsync("2s", function () use ($toast) {
                     Animation::fadeOut($toast, 500);
                 });
             });
@@ -306,7 +347,7 @@ class MainForm extends AbstractForm {
             !$this->uiState ? $this->testCookie($this->cookie->text, false, true) : $this->testCookie($this->cookie->text, false, false);
             $e->sender->enabled = false;
             $e->sender->opacity = 0.5;
-            waitAsync("3s", function() use ($e) {
+            waitAsync("1.5s", function () use ($e) {
                 $e->sender->enabled = true;
                 $e->sender->opacity = 1;
             });
@@ -382,6 +423,12 @@ class MainForm extends AbstractForm {
      */
     function doShow(UXWindowEvent $e = null)
     {
+        if (in_array("runUpdater", $GLOBALS["argv"])) return $this->loadForm("UpdaterForm");
+        (!in_array("updatemsg", $GLOBALS["argv"])) ?: $this->toast("Обновление установлено!" . PHP_EOL . "Пожалуйста, сообщайте в тему программы о пожеланиях/багах/недоработках.");
+
+        (!fs::exists("debug.log")) ?: fs::delete("debug.log");
+        (!fs::exists("UpdaterCopy.exe")) ?: waitAsync("3s", function () { fs::delete("UpdaterCopy.exe"); });
+
         $this->myNick->text = $this->defineMyNickname();
         $this->setDate();
         if ($cookie = $this->ini->get("cookie")) {
@@ -392,5 +439,6 @@ class MainForm extends AbstractForm {
         }
         $this->myTitle->text = ($title = $this->ini->get("title")) ? $title : "";
         $this->checkUpdates();
+        $this->setTimerUntilNewDay();
     }
 }
