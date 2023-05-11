@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?import javafx.scene.*?><?import javafx.collections.*?><?import javafx.scene.layout.*?><?import javafx.scene.control.*?><?import javafx.scene.text.*?><?import javafx.scene.image.*?><?import javafx.scene.shape.*?><?import javafx.scene.paint.*?><?import javafx.scene.web.*?><?import javafx.geometry.*?><?import java.lang.*?><?import org.develnext.jphp.ext.javafx.classes.data.*?><?import org.develnext.jphp.ext.javafx.support.*?><?import org.develnext.jphp.ext.javafx.support.control.*?><?import org.develnext.jphp.ext.game.support.*?><AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" focusTraversable="false" id="" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="176" prefWidth="456" styleClass="">
+  <children>
+    <Rectangle arcHeight="0" arcWidth="0" fill="#ffffff00" focusTraversable="false" height="176" id="rect" layoutX="0" layoutY="0" stroke="#b3b3b3" strokeType="INSIDE" strokeWidth="0.3" styleClass="" width="456"/>
+    <Panel backgroundColor="#e0f4e5" borderColor="#666666" borderRadius="0" borderStyle="SOLID" borderWidth="0" focusTraversable="false" id="panel" layoutX="1" layoutY="1" maxHeight="-1" maxWidth="-1" minHeight="-1" minWidth="-1" prefHeight="27" prefWidth="454" styleClass="" titleColor="#4d4d4d" titleOffset="15" titlePosition="TOP_LEFT">
+      <children>
+        <ImageViewEx autoSize="false" centered="false" focusTraversable="false" height="17" id="imageIcon" layoutX="6" layoutY="5" mosaic="false" mosaicGap="0" proportional="false" stretch="true" styleClass="" textFill="#000000" width="17">
+          <font>
+            <Font name="System Regular" size="12"/>
+          </font>
+        </ImageViewEx>
+        <Data cursor="DEFAULT" enabled="1" id="data-imageIcon" visible="1"/>
+        <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgTitle" layoutX="30" layoutY="5" prefHeight="17" prefWidth="80" styleClass="label " text="Ой..." textAlignment="LEFT" underline="false" wrapText="false">
+          <font>
+            <Font name="System Regular" size="12"/>
+          </font>
+        </LabelEx>
+        <Data cursor="DEFAULT" enabled="1" id="data-labelProgTitle" visible="1"/>
+        <FlatButton alignment="CENTER" clickColor="#bc5c64" color="#6680e600" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" hoverColor="#824f4f" id="buttonClose" layoutX="404" layoutY="0" prefHeight="27" prefWidth="50" style="-fx-background-radius: 0px;" styleClass="x-flat-button " text="✕" textAlignment="CENTER" textFill="#b3b3b3" underline="false" wrapText="false">
+          <font>
+            <Font name="System Regular" size="16"/>
+          </font>
+        </FlatButton>
+        <Data cursor="DEFAULT" enabled="1" id="data-buttonClose" visible="1"/>
+      </children>
+      <titleFont>
+        <Font name="System Regular" size="12"/>
+      </titleFont>
+    </Panel>
+    <Data cursor="DEFAULT" enabled="1" id="data-panel" visible="1"/>
+    <ImageViewEx autoSize="false" centered="false" focusTraversable="false" height="32" id="imageInfo" layoutX="16" layoutY="40" mosaic="false" mosaicGap="0" proportional="true" stretch="true" styleClass="" textFill="#000000" width="32">
+      <font>
+        <Font name="System Regular" size="12"/>
+      </font>
+    </ImageViewEx>
+    <Data cursor="DEFAULT" enabled="1" id="data-imageInfo" image=".data/img/warning.png" visible="1"/>
+    <FlatButton alignment="CENTER" borderRadius="3" color="#80b380" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" hoverColor="#669966" id="buttonOk" layoutX="360" layoutY="144" prefHeight="24" prefWidth="88" styleClass="x-flat-button " text="ОК" textAlignment="CENTER" textFill="#ffffff" underline="false" wrapText="false">
+      <font>
+        <Font name="System Regular" size="12"/>
+      </font>
+    </FlatButton>
+    <Data cursor="HAND" enabled="1" id="data-buttonOk" visible="1"/>
+    <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="label" layoutX="64" layoutY="40" prefHeight="16" prefWidth="96" styleClass="label " text="Текст" textAlignment="LEFT" underline="false" wrapText="false">
+      <font>
+        <Font name="System Regular" size="12"/>
+      </font>
+    </LabelEx>
+    <Data cursor="DEFAULT" enabled="1" id="data-label" visible=""/>
+    <ScrollPane focusTraversable="false" hbarPolicy="AS_NEEDED" hvalue="0" id="container" layoutX="61" layoutY="38" prefHeight="96" prefWidth="387" styleClass="scroll-pane " vbarPolicy="AS_NEEDED" vvalue="0">
+      <content>
+        <AnchorPane focusTraversable="false" id="" maxHeight="-1" maxWidth="-1" minHeight="-1" minWidth="-1" prefHeight="0" prefWidth="0" styleClass="">
+          <children/>
+        </AnchorPane>
+      </content>
+    </ScrollPane>
+    <Data cursor="DEFAULT" enabled="1" id="data-container" visible="1"/>
+    <Data cursor="DEFAULT" enabled="1" id="data-rect" visible="1"/>
+  </children>
+</AnchorPane>

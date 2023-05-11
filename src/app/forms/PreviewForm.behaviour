@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <behaviours>
+  <target id="table">
+    <behaviour type="behaviour\custom\EscapeShutdownBehaviour"/>
+  </target>
   <target id="panel">
     <behaviour animated="1" opacity="0.96341463414634" opacityEnabled="1" type="behaviour\custom\DraggingFormBehaviour"/>
   </target>

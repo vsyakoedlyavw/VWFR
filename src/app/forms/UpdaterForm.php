@@ -1,6 +1,7 @@
 <?php
 namespace app\forms;
 
+use gui\Ext4JphpWindows;
 use httpclient, std, gui, framework, app;
 
 class UpdaterForm extends AbstractForm
@@ -15,7 +16,7 @@ class UpdaterForm extends AbstractForm
                 $verInfo = is_array($jd = json_decode(trim(file_get_contents($this->versionUrl)), true)) ? $jd : false;
 
                 if (!str::endsWith($currName = $GLOBALS["argv"][2], ".exe")) {
-                    $files = fs::scan("./", ["extensions" => ["exe"], "excludeDirs" => true, "minSize" => 3 * 1024 * 1024, "maxSize" => 4 * 1024 * 1024]);
+                    $files = fs::scan("./", ["extensions" => ["exe"], "excludeDirs" => true, "minSize" => 3 * 1024 * 1024, "maxSize" => 7 * 1024 * 1024]);
                     if (count($files) != 2) return $this->doSelfInstall($verInfo, "Не удалось определить имя исходного .exe");
                     else foreach ($files as $file) if (fs::name($file) != "UpdaterCopy.exe" && fs::hash(fs::abs("./UpdaterCopy.exe")) == fs::hash($file)) $currName = fs::name($file);
                     if (!str::endsWith($currName, ".exe")) return $this->doSelfInstall($verInfo, "Не удалось определить имя исходного .exe");
@@ -91,14 +92,6 @@ class UpdaterForm extends AbstractForm
     }
 
     /**
-     * @event show 
-     */
-    function doShow(UXWindowEvent $e = null)
-    {
-        $this->getUpdate();
-    }
-
-    /**
      * @event showing 
      */
     function doShowing(UXWindowEvent $e = null)
@@ -106,4 +99,21 @@ class UpdaterForm extends AbstractForm
         !(count($GLOBALS["argv"]) < 4) ?: exit();
     }
 
+    /**
+     * @event show 
+     */
+    function doShow(UXWindowEvent $e = null)
+    {    
+        $this->getUpdate();
+    }
+
+    /**
+     * @event buttonClose.action 
+     */
+    function doButtonCloseAction(UXEvent $e = null)
+    {
+        Animation::fadeOut($this, 200, function () {
+            app()->shutdown();
+        });
+    }
 }

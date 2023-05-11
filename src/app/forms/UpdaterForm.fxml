@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?import javafx.scene.*?><?import javafx.collections.*?><?import javafx.scene.layout.*?><?import javafx.scene.control.*?><?import javafx.scene.text.*?><?import javafx.scene.image.*?><?import javafx.scene.shape.*?><?import javafx.scene.paint.*?><?import javafx.scene.web.*?><?import javafx.geometry.*?><?import java.lang.*?><?import org.develnext.jphp.ext.javafx.classes.data.*?><?import org.develnext.jphp.ext.javafx.support.*?><?import org.develnext.jphp.ext.javafx.support.control.*?><?import org.develnext.jphp.ext.game.support.*?><AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" focusTraversable="false" id="" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="248" prefWidth="360" styleClass="">
+<?import javafx.scene.*?><?import javafx.collections.*?><?import javafx.scene.layout.*?><?import javafx.scene.control.*?><?import javafx.scene.text.*?><?import javafx.scene.image.*?><?import javafx.scene.shape.*?><?import javafx.scene.paint.*?><?import javafx.scene.web.*?><?import javafx.geometry.*?><?import java.lang.*?><?import org.develnext.jphp.ext.javafx.classes.data.*?><?import org.develnext.jphp.ext.javafx.support.*?><?import org.develnext.jphp.ext.javafx.support.control.*?><?import org.develnext.jphp.ext.game.support.*?><AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" focusTraversable="false" id="" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="280" prefWidth="360" styleClass="">
   <children>
-    <ProgressBar focusTraversable="false" id="progressBar" layoutX="8" layoutY="8" prefHeight="24" prefWidth="344" progress="0" styleClass="progress-bar "/>
+    <Rectangle arcHeight="0" arcWidth="0" fill="#ffffff00" focusTraversable="false" height="280" id="rect" layoutX="0" layoutY="0" stroke="#b3b3b3" strokeType="INSIDE" strokeWidth="0.3" styleClass="" width="360"/>
+    <ProgressBar focusTraversable="false" id="progressBar" layoutX="8" layoutY="40" prefHeight="24" prefWidth="344" progress="0" styleClass="progress-bar "/>
     <Data cursor="DEFAULT" enabled="1" id="data-progressBar" visible="1"/>
-    <TextArea editable="false" focusTraversable="false" id="log" layoutX="8" layoutY="40" prefColumnCount="40" prefHeight="160" prefWidth="344" promptText="" styleClass="text-input text-area " text="" wrapText="true">
+    <TextArea editable="false" focusTraversable="false" id="log" layoutX="8" layoutY="72" prefColumnCount="40" prefHeight="160" prefWidth="344" promptText="" styleClass="text-input text-area " text="" wrapText="true">
       <font>
         <Font name="System Regular" size="12"/>
       </font>
     </TextArea>
     <Data cursor="DEFAULT" enabled="1" id="data-log" visible="1"/>
-    <LabelEx alignment="CENTER" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgress" layoutX="8" layoutY="8" prefHeight="24" prefWidth="344" styleClass="label " text="" textAlignment="LEFT" underline="false" wrapText="false">
+    <LabelEx alignment="CENTER" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgress" layoutX="8" layoutY="40" prefHeight="24" prefWidth="344" styleClass="label " text="" textAlignment="LEFT" underline="false" wrapText="false">
       <font>
         <Font name="System Regular" size="11"/>
       </font>
     </LabelEx>
     <Data cursor="DEFAULT" enabled="1" id="data-labelProgress" visible="1"/>
-    <TableView editable="false" fixedCellSize="22" focusTraversable="true" id="table" layoutX="8" layoutY="40" prefHeight="200" prefWidth="344" styleClass="table-view " tableMenuButtonVisible="false">
+    <TableView editable="false" fixedCellSize="22" focusTraversable="true" id="table" layoutX="8" layoutY="72" prefHeight="200" prefWidth="344" styleClass="table-view " tableMenuButtonVisible="false">
       <placeholder>
         <Label/>
       </placeholder>
@@ -27,5 +28,32 @@
       </columns>
     </TableView>
     <Data cursor="DEFAULT" enabled="1" id="data-table" visible="1"/>
+    <Panel backgroundColor="#e0f4e5" borderColor="#666666" borderRadius="0" borderStyle="SOLID" borderWidth="0" focusTraversable="false" id="panel" layoutX="0" layoutY="0" maxHeight="-1" maxWidth="-1" minHeight="-1" minWidth="-1" prefHeight="27" prefWidth="360" styleClass="" titleColor="#4d4d4d" titleOffset="15" titlePosition="TOP_LEFT">
+      <children>
+        <ImageViewEx autoSize="false" centered="false" focusTraversable="false" height="17" id="imageIcon" layoutX="6" layoutY="5" mosaic="false" mosaicGap="0" proportional="false" stretch="true" styleClass="" textFill="#000000" width="17">
+          <font>
+            <Font name="System Regular" size="12"/>
+          </font>
+        </ImageViewEx>
+        <Data cursor="DEFAULT" enabled="1" id="data-imageIcon" visible="1"/>
+        <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgTitle" layoutX="30" layoutY="5" prefHeight="17" prefWidth="48" styleClass="label " text="Updater" textAlignment="LEFT" underline="false" wrapText="false">
+          <font>
+            <Font name="System Regular" size="12"/>
+          </font>
+        </LabelEx>
+        <Data cursor="DEFAULT" enabled="1" id="data-labelProgTitle" visible="1"/>
+        <FlatButton alignment="CENTER" clickColor="#bc5c64" color="#6680e600" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" hoverColor="#824f4f" id="buttonClose" layoutX="310" layoutY="0" prefHeight="27" prefWidth="50" style="-fx-background-radius: 0px;" styleClass="x-flat-button " text="✕" textAlignment="CENTER" textFill="#b3b3b3" underline="false" wrapText="false">
+          <font>
+            <Font name="System Regular" size="16"/>
+          </font>
+        </FlatButton>
+        <Data cursor="DEFAULT" enabled="1" id="data-buttonClose" visible="1"/>
+      </children>
+      <titleFont>
+        <Font name="System Regular" size="12"/>
+      </titleFont>
+    </Panel>
+    <Data cursor="DEFAULT" enabled="1" id="data-panel" visible="1"/>
+    <Data cursor="DEFAULT" enabled="1" id="data-rect" visible="1"/>
   </children>
 </AnchorPane>
