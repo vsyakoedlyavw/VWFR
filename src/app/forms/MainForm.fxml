@@ -10,7 +10,7 @@
           </font>
         </ImageViewEx>
         <Data clickImage="" cursor="DEFAULT" enabled="1" hoverImage="" id="data-imageIcon" visible="1"/>
-        <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgTitle" layoutX="30" layoutY="5" prefHeight="17" prefWidth="64" styleClass="label " text="VWFR 1.2.0" textAlignment="LEFT" underline="false" wrapText="false">
+        <LabelEx alignment="CENTER_LEFT" autoSize="false" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="labelProgTitle" layoutX="30" layoutY="5" prefHeight="17" prefWidth="64" styleClass="label " text="VWFR 1.2.1" textAlignment="LEFT" underline="false" wrapText="false">
           <font>
             <Font name="System Regular" size="12"/>
           </font>
@@ -110,7 +110,7 @@
       </font>
     </FlatButton>
     <Data cursor="HAND" enabled="1" id="data-buttonCreateReport" visible="1"/>
-    <CheckBox alignment="CENTER_LEFT" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4.0000000000000" id="checkbox" layoutX="8" layoutY="251" prefHeight="17" prefWidth="272" selected="true" styleClass="check-box " text="Предпросмотр жалобы перед публикацией" textAlignment="LEFT" underline="false" wrapText="false">
+    <CheckBox alignment="CENTER_LEFT" contentDisplay="LEFT" ellipsisString="..." focusTraversable="false" graphicTextGap="4" id="checkbox" layoutX="8" layoutY="251" prefHeight="17" prefWidth="272" selected="true" styleClass="check-box " text="Предпросмотр жалобы перед публикацией" textAlignment="LEFT" underline="false" wrapText="false">
       <font>
         <Font name="System Regular" size="12"/>
       </font>

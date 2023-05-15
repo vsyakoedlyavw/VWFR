@@ -47,7 +47,7 @@
             <Font name="System Regular" size="16"/>
           </font>
         </FlatButton>
-        <Data cursor="DEFAULT" enabled="1" id="data-buttonClose" visible="1"/>
+        <Data cursor="DEFAULT" enabled="1" id="data-buttonClose" visible=""/>
       </children>
       <titleFont>
         <Font name="System Regular" size="12"/>

@@ -2,6 +2,7 @@
 
 namespace app\forms;
 
+use php\io\IOException;
 use system\DFFIStruct;
 use system\DFFIReferenceValue;
 use system\DFFIType;
@@ -17,14 +18,14 @@ use php\time\Timer;
 class MainForm extends AbstractForm {
 
     public $uiState         = true,
-           $currentVersion  = "1.2.0",
+           $currentVersion  = "1.2.1",
            $versionUrl      = "https://raw.githubusercontent.com/vsyakoedlyavw/VWFR/main/info.json",
            $userAgentUrl    = "https://whatsmyua.info",
            $imgurCids       = ["ec61be071b16841", "ad338f3eaae9baa", "9f3460e67f308f6", "65bfadb95e040a0", "2421109ee0e8d3d", "c37fc05199a05b7", "70ff50b8dfc3a53", "886730f5763b437", "6cf1cd6f95fe7c8", "4408bab9df4233c"],
            $serverCodes     = ["41-жалобы-на-игроков", "79-жалобы-на-игроков", "10-vime", "12-explore", "13-discover", "15-empire", "54-wurst", "11-flair", "66-hoden"],
            $noCheck         = [];
 
-    function checkUpdates($try = 0)
+    function checkUpdates()
     {
         new Thread(function () {
             if (is_array($verInfo = json_decode(trim(file_get_contents($this->versionUrl)), true))) {
@@ -45,11 +46,27 @@ class MainForm extends AbstractForm {
                             $exeName = array_pop($dirPath);
                             $copyPath = implode("/", $dirPath) . "/UpdaterCopy.exe";
                             fs::copy($exePath, $copyPath);
-
                             if (fs::exists(fs::abs("./UpdaterCopy.exe"))) {
-                                $df->toast("Запуск апдейтера, подождите...");
-                                execute('UpdaterCopy.exe runUpdater "' . $exeName . '" "' . $verInfo["actualVersion"] . '" "' . fs::hash($exePath) . '"');
-                                app()->shutdown();
+                                $command = 'UpdaterCopy.exe runUpdater "' . $exeName . '" "' . $verInfo["actualVersion"] . '" "' . fs::hash($exePath) . '"';
+                                $df->toast("Запуск апдейтера, подождите... (не закрывайте программу)", "1s");
+                                waitAsync("1s", function () use ($df, $command, $verInfo) {
+                                    try {
+                                        execute($command);
+                                        return app()->shutdown();
+                                    } catch (IOException $e) {
+                                        $df->toast("Пробуем другой способ запуска апдейтера..." . PHP_EOL .
+                                        "(если он так и не запустится самостоятельно, сообщите об этом разработчику)", "3s");
+                                        waitAsync("1s", function () use ($df, $command, $verInfo) {
+                                            try {
+                                                execute("cmd.exe /c " . $command);
+                                                return app()->shutdown();
+                                            } catch (IOException $e) {
+                                                $this->showMessage("Невозможно запустить апдейтер, сообщите об этом разработчику." . PHP_EOL . PHP_EOL . $e->getMessage());
+                                                return open($verInfo["downloadUrl"]);
+                                            }
+                                        });
+                                    }
+                                });
                             } else {
                                 $df->toast("Не удалось создать копию программы для запуска апдейтера о.О" . PHP_EOL .
                                 "Пожалуйста, скачайте обновление вручную по открывшейся ссылке или из темы программы.");
@@ -63,8 +80,9 @@ class MainForm extends AbstractForm {
         })->start();
     }
 
-    function showMessage($msg, $type = "info") {
+    function showMessage($msg, $type = "info", $alwaysOnTop = true) {
         $mf = $this->form("MessageForm");
+        if (!$alwaysOnTop) $mf->alwaysOnTop = false;
         if ($type == "info") $mf->title = $mf->labelProgTitle->text = "Сообщение";
         $this->changeTheme($this->combobox->selectedIndex, "MessageForm", true);
         $mf->imageInfo->image = new UXImage("res://.data/img/" . $type . ".png");
@@ -592,11 +610,11 @@ class MainForm extends AbstractForm {
             $this->loadForm("UpdaterForm");
             return $this->changeTheme($this->combobox->selectedIndex, "UpdaterForm", true);
         }
-        #(!in_array("updatemsg", $GLOBALS["argv"])) ?: $this->toast("Обновление установлено!" . PHP_EOL .
-        #"Пожалуйста, сообщайте в тему программы на форуме о пожеланиях и возникших багах/недоработках (если таковые вдруг имеются :P).", "5s");
-        (!in_array("updatemsg", $GLOBALS["argv"])) ?: $this->showMessage("Обновление установлено!" . PHP_EOL .
-        "В новой версии совершена кардинальная работа над дизайном, также было переработано и добавлено множество других вещей." . PHP_EOL .
-        "Поэтому важна обратная связь: сообщайте в тему программы на форуме (или мне там же в ЛС) о возникших багах/недоработках или разного рода странностей в интерфейсе, если таковые вдруг обнаружатся. Благодарю за понимание <3");
+        (!in_array("updatemsg", $GLOBALS["argv"])) ?: $this->toast("Обновление установлено!" . PHP_EOL .
+        "Пожалуйста, сообщайте в тему программы на форуме о пожеланиях и возникших багах/недоработках (если таковые вдруг имеются :P).", "3s");
+        #(!in_array("updatemsg", $GLOBALS["argv"])) ?: $this->showMessage("Обновление установлено!" . PHP_EOL .
+        #"В новой версии совершена кардинальная работа над дизайном, также было переработано и добавлено множество других вещей." . PHP_EOL .
+        #"Поэтому важна обратная связь: сообщайте в тему программы на форуме (или мне там же в ЛС) о возникших багах/недоработках или разного рода странностей в интерфейсе, если таковые вдруг обнаружатся. Благодарю за понимание <3", "info", false);
 
         (!fs::exists("debug.log")) ?: fs::delete("debug.log");
         (!fs::exists("UpdaterCopy.exe")) ?: waitAsync("3s", function () { fs::delete("UpdaterCopy.exe"); });
