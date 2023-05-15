@@ -1,4 +1,4 @@
-# VWFR v1.2.1 (VW Fast Report)
+# VWFR 1.2.1 (VW Fast Report)
 Устраняй нарушителей и заливай жалобы на форум в один клик, не отвлекаясь от игры.
 
 ![Preview](https://i.imgur.com/j0kPEUR.png)
