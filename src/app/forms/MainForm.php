@@ -18,10 +18,10 @@ use php\time\Timer;
 class MainForm extends AbstractForm {
 
     public $uiState         = true,
-           $currentVersion  = "1.2.1",
+           $currentVersion  = "1.2.2",
            $versionUrl      = "https://raw.githubusercontent.com/vsyakoedlyavw/VWFR/main/info.json",
            $userAgentUrl    = "https://whatsmyua.info",
-           $imgurCids       = ["ec61be071b16841", "ad338f3eaae9baa", "9f3460e67f308f6", "65bfadb95e040a0", "2421109ee0e8d3d", "c37fc05199a05b7", "70ff50b8dfc3a53", "886730f5763b437", "6cf1cd6f95fe7c8", "4408bab9df4233c"],
+           $imgurCids       = ["ec61be071b16841", "ad338f3eaae9baa", "9f3460e67f308f6", "65bfadb95e040a0", "2421109ee0e8d3d", "d297fd441566f99", "70ff50b8dfc3a53", "886730f5763b437", "6cf1cd6f95fe7c8", "4408bab9df4233c"],
            $serverCodes     = ["41-жалобы-на-игроков", "79-жалобы-на-игроков", "10-vime", "12-explore", "13-discover", "15-empire", "54-wurst", "11-flair", "66-hoden"],
            $noCheck         = [];
 
@@ -94,7 +94,7 @@ class MainForm extends AbstractForm {
         $label->text = $msg;
         $vbox = new UXVBox();
         $vbox->add($label);
-        $vbox->add(new UXLabel());
+        $vbox->add(new UXLabel()); // добавляем фантомный label чтобы узнать в каком месте заканчивается первый. как вам?
         $mf->container->content = $vbox;
         $mf->show();
         $mf->container->height = $vbox->children[1]->y + 30;
@@ -111,9 +111,7 @@ class MainForm extends AbstractForm {
 
     function defineMyNickname()
     {
-        return ($username = array_values(array_filter(file($_ENV["APPDATA"] . "\\.vimeworld\\config"), function ($value) {
-            return str::startsWith($value, "username:");
-        }))) ? explode(":", $username[0])[1] : "";
+        return json_decode(file_get_contents($_ENV["APPDATA"] . "\\.vimeworld\\launcher.json"), true)["last_account"] ?? "";
     }
 
     function cookieToArray($cookie)
@@ -269,8 +267,13 @@ class MainForm extends AbstractForm {
 
         $csrfKey = $jSoup->select("input[name=csrfKey]")->attr("value");
         $plupload = $jSoup->select("input[name=plupload]")->attr("value");
+        $isBanned = $jSoup->select(".ipsType_huge.fa.fa-lock")->valid() ?? "";
+        $username = $jSoup->select("a[title=Перейти в свой профиль]:not(:contains(Профиль))")->text() ?? "";
+        $welcomeText = (Regex::match("^[a-zA-Z0-9_]{3,30}$", $username)) ? "Добро пожаловать, " . $username . "!" . PHP_EOL : "";
+        if ($isBanned)
+            return $this->toast("К сожалению, ваш форумный аккаунт заблокирован.");
         if ($jSoup->select("a[id=elUserSignIn]")->hasAttr("href"))
-            return $this->toast("Cookie недействительны" . ($fromReport ? ", обновите их" : ". Возможно, вы не авторизованы на форуме?"));
+            return $this->toast("Cookie недействительны" . ($fromReport ? ", обновите их" : ". Возможно, вы не авторизованы на форуме или они устарели и их пора обновить?"));
         if (strlen($csrfKey) <> 32 || strlen($plupload) <> 32) {
             $this->toast("Не удалось получить нужные данные с форума о.О" . PHP_EOL . "Попробуйте обновить Cookie / проверить соединение с интернетом / повторить попытку.");
             return file_put_contents("debug.log", $response);
@@ -284,64 +287,114 @@ class MainForm extends AbstractForm {
                 $latest = $this->scrSelected;
             elseif (!is_array($latest = $this->getLatestScr($this->numberField->value)))
                 return false;
-            if (!parse_url($imgUrl = $this->uploadImages($latest))["host"] || !$imgUrl)
-                return false;
 
-            if ($this->checkbox->selected) {
-                $cf = $this->form("ConfirmPostForm");
-                $cf->show();
-                $this->centerForm($cf);
-                $this->changeTheme($this->combobox->selectedIndex, "ConfirmPostForm", true);
-                $cf->labelTitle->text .= $this->myTitle->text;
-                $cf->labelText->text = "[Текст жалобы:]" . PHP_EOL .
-                "  1. " . $this->nick->text . PHP_EOL .
-                "  2. " . $this->myNick->text .  PHP_EOL .
-                "  3. " . $this->date->text . PHP_EOL .
-                "  4. " . $imgUrl . PHP_EOL;
-                $cf->labelBrowser->x = $cf->labelText->font->calculateTextWidth("  4. " . $imgUrl) + 15;
-                $cf->labelBrowser->on("click", function () use ($imgUrl) { open($imgUrl); });
-                $cf->buttonCancel->on("click", function () use ($cf) {
-                    $cf->free();
-                    $this->deleteAlbum();
-                    return $this->toast("Вы отменили публикацию жалобы");
-                });
-                $cf->buttonPost->on("click", function () use ($cf, $csrfKey, $plupload, $forumHttpClient, $imgUrl) {
-                    $cf->free();
+            $uploadImages = function () use ($latest) {
+                if (!parse_url($imgUrl = $this->uploadImages($latest))["host"] || !$imgUrl)
+                    return false;
+                else return $imgUrl;    
+            };
+            $postReport = function ($imgUrl) use ($csrfKey, $plupload, $forumHttpClient) {
+                if (!$imgUrl) return false;
+                if ($this->checkbox->selected) {
+                    $cf = $this->form("ConfirmPostForm");
+                    $cf->show();
+                    $this->centerForm($cf);
+                    $this->changeTheme($this->combobox->selectedIndex, "ConfirmPostForm", true);
+                    $cf->labelTitle->text .= $this->myTitle->text;
+                    $cf->labelText->text = "[Текст жалобы:]" . PHP_EOL .
+                    "  1. " . $this->nick->text . PHP_EOL .
+                    "  2. " . $this->myNick->text .  PHP_EOL .
+                    "  3. " . $this->date->text . PHP_EOL .
+                    "  4. " . $imgUrl . PHP_EOL;
+                    $cf->labelBrowser->x = $cf->labelText->font->calculateTextWidth("  4. " . $imgUrl) + 15;
+                    $cf->labelBrowser->on("click", function () use ($imgUrl) { open($imgUrl); });
+                    $cf->buttonCancel->on("click", function () use ($cf) {
+                        $cf->free();
+                        $this->deleteAlbum();
+                        return $this->toast("Вы отменили публикацию жалобы");
+                    });
+                    $cf->buttonPost->on("click", function () use ($cf, $csrfKey, $plupload, $forumHttpClient, $imgUrl) {
+                        $cf->free();
+                        $this->postReport($csrfKey, $plupload, $forumHttpClient, $imgUrl);
+                    });
+                } else {
                     $this->postReport($csrfKey, $plupload, $forumHttpClient, $imgUrl);
-                });
-            } else {
-                $this->postReport($csrfKey, $plupload, $forumHttpClient, $imgUrl);
-            }
+                }
+            };
+            
+            $this->aSync($uploadImages, $postReport);
         } else {
-            $this->toast("Cookie корректны и сохранены, программа готова к использованию", "2s");
+            $this->toast($welcomeText . "Cookie корректны и сохранены, программа готова к использованию", "2s");
         }
     }
 
     function uploadImages($filesToUpload)
     {
-        $errorMsgs = ["Не удалось загрузить изображение на Imgur o.О" . PHP_EOL . "Попробуйте ещё раз", "Imgur возвратил ошибку "];
+        $errorMsgs = ["Не удалось загрузить изображение на Imgur o.О" . PHP_EOL . "Попробуйте ещё раз (возможна также некорректная работа если вы используете VPN)", "Imgur возвратил ошибку "];
         $imgHttpClient = new HttpClient();
         $imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $this->imgurCids[array_rand($this->imgurCids)])];
-        //$imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $this->imgurCids[9])];
+        #$imgHttpClient->headers = ["Authorization" => "Client-ID " . ($cId = $this->imgurCids[5])];
         $imgHttpClient->requestType = "MULTIPART";
+        $successUploads = "0";
+
+        uiLater(function () use (&$pf, $successUploads, $filesToUpload) {
+            $pf = $this->form("PreloaderForm");
+            if (!$pf->visible) {
+                Animation::fadeOut($pf, 200, function () use ($pf) {
+                    $pf->show();
+                    $this->centerForm($pf);
+                    Animation::fadeIn($pf, 200);
+                });
+                #$pf->layout->opacity = 0.5;
+                $this->changeTheme($this->combobox->selectedIndex, "PreloaderForm", true);
+            }
+            $pf->labelProgress->text = "Загружено изображений: " . $successUploads . "/" . count($filesToUpload);
+        });
+
         foreach ($filesToUpload as $file) {
-            $response = $imgHttpClient->post("https://api.imgur.com/3/image/", ["image" => new File($file), "description" => ($file == end($filesToUpload) ? "VWFR was here &#9749;" : "")])->body();
+            $response = $imgHttpClient->post("https://api.imgur.com/3/image/", ["image" => new File($file), "description" => ($file == end($filesToUpload) ? "VWFR was here &#9925;" : "")])->body();
             $jsonRes = json_decode($response, true)["data"];
             if (!$dh = $jsonRes["deletehash"]) {
                 file_put_contents("debug.log", PHP_EOL . PHP_EOL . $response, FILE_APPEND);
+                if ($pf->visible)
+                    Animation::fadeOut($pf, 200, function () use ($pf) {
+                        $pf->free();
+                    });
                 return (!($eCode = $jsonRes["error"]["code"]) && !($eMessage = $jsonRes["error"]["message"]))
-                ? $this->toast($errorMsgs[0]) : $this->toast($errorMsgs[1] . $eCode . ":" . PHP_EOL . $eMessage);
+                ? uiLater(function () use ($errorMsgs) { $this->toast($errorMsgs[0]); }) : uiLater(function () use ($errorMsgs, $eCode, $eMessage) { $this->toast($errorMsgs[1] . $eCode . ":" . PHP_EOL . $eMessage); });
             }
             $deletehashes[] = $dh;
+            $successUploads += 1;
+            uiLater(function () use ($pf, $successUploads, $filesToUpload) {
+                $pf->labelProgress->text = "Загружено изображений: " . $successUploads . "/" . count($filesToUpload);
+            });
         }
+
+        waitAsync(100, function () use ($pf) { // чтобы пользователь успевал видеть последнее значение в прогрессе до создания альбома :p
+            uiLater(function () use ($pf) {
+                if (!$pf->isFree() && $pf->labelProgress->visible) $pf->labelProgress->text = "Создание альбома...";
+            });
+        });
         $imgHttpClient->requestType = "URLENCODE";
-
         $response = $imgHttpClient->post("https://api.imgur.com/3/album/", ["deletehashes" => implode(",", $deletehashes)])->body();
-
         $this->lastAlbum = ["clientId" => $cId, "deletehash" => json_decode($response, true)["data"]["deletehash"], "deletehashes" => $deletehashes];
-        return ($id = json_decode($response, true)["data"]["id"]) ? "https://imgur.com/a/" . $id : $this->toast($errorMsgs[0]);
+        if ($pf->visible)
+            Animation::fadeOut($pf, 200, function () use ($pf) {
+                $pf->free();
+            });
+        return ($id = json_decode($response, true)["data"]["id"]) ? "https://imgur.com/a/" . $id : uiLater(function () use ($errorMsgs) { $this->toast($errorMsgs[0]); });
     }
-    
+
+    function aSync($func, $callback) // выполняет функцию в потоке, ждёт результата и выполняет другую функцию
+    {
+        new Thread(function () use ($func, $callback) {
+            $return = $func();
+            uiLater(function () use ($callback, $return) {
+                $callback($return);
+            });
+        })->start();
+    }
+
     function uploadVideo($filesToUpload) // спойлер для внимательных и любопытных)
     {
         $errorMsgs = ["Не удалось загрузить видео на Imgur o.О" . PHP_EOL . "Попробуйте ещё раз", "Imgur возвратил ошибку "];
@@ -372,7 +425,9 @@ class MainForm extends AbstractForm {
                     "<p>" . $this->nick->text .
                     "<br>" . $this->myNick->text .
                     "<br>" . $this->date->text . 
-                    '<br><a href="' . $imgUrl . '" ipsnoembed="true">' . $imgUrl . "</a></p>",
+                    '<br><a href="' . $imgUrl . '" ipsnoembed="true">' . $imgUrl . "</a>" . 
+                    ($this->checkboxAddInfo->selected && ($add = $this->additionalInfo->text) ? "<br>" . $add : "") .
+                    "</p>",
                 "topic_auto_follow" => 0,
                 "topic_auto_follow_checkbox" => ($this->checkboxFollow->selected) ? 1 : 0];
 
@@ -397,6 +452,15 @@ class MainForm extends AbstractForm {
                     Animation::fadeOut($toast, 500);
                 });
             });
+            // ДА. я очень. хотел. кликабельную. ссылку. было так:
+            // $this->toast("Жалоба опубликована и доступна по ссылке:" . PHP_EOL . explode("-", $location)[0] . "-", "2s");
+            if ($this->checkboxAddInfo->selected) {
+                $this->checkboxAddInfo->selected = false;
+                $this->checkboxAddInfo->text = "Указать дополнительную информацию к жалобе (6-й пункт)";
+                $this->additionalInfo->text = "";
+                $this->additionalInfo->visible = 
+                $this->additionalInfo->enabled = false;
+            }
             $this->numberField->value = 1;
             $this->panel->requestFocus(); //на намберфилд выше при смене значения переводит фокус, а он нам не нужен, поэтому меняем фокус на что-то нефокусируемое
             if (!empty($this->scrSelected)) {
@@ -405,8 +469,6 @@ class MainForm extends AbstractForm {
                 $this->labelCountScreenshots->opacity = 1.0;
                 $this->numberField->enabled = true;
             }
-            // ДА. я очень. хотел. кликабельную. ссылку. было так:
-            // $this->toast("Жалоба опубликована и доступна по ссылке:" . PHP_EOL . explode("-", $location)[0] . "-", "2s");
             $this->timerButton();
         } elseif (str::contains($postRequest->body(), "Установлен лимит на отправку нескольких сообщений за определённое время"))
             $this->showMessage("Не прошло 30 секунд с момента публикации последней жалобы или ответа", "err");
@@ -450,7 +512,7 @@ class MainForm extends AbstractForm {
      */
     function doButtonDefineMyNicknameAction(UXEvent $e = null)
     {
-        (!$myNick = $this->defineMyNickname()) ? $this->toast("Не удалось определить ваш ник, скорее всего, вы не авторизованы в лаунчере VimeWorld") : $this->myNick->text = $myNick;
+        (!$myNick = $this->defineMyNickname()) ? $this->toast("Не удалось определить ваш ник, скорее всего, вы не авторизованы в лаунчере VimeWorld. Заполните поле вручную.") : $this->myNick->text = $myNick;
     }
 
     /**
@@ -514,12 +576,20 @@ class MainForm extends AbstractForm {
             $this->obs = $this->observer("focused")->addListener(function ($state) {
                 $clipText = trim(UXClipboard::getText());
                 if (!$state && Regex::match("^[a-zA-Z0-9_]{3,16}$", $clipText) && $clipText !== $this->nick->text && $clipText !== $this->myNick->text && !in_array($clipText, $this->noCheck)) {
-                    new Thread(function () use ($clipText) {
-                        $checkHttpClient = new HttpClient();
-                        $clipPlayerInfo = json_decode($checkHttpClient->get("https://api.vimeworld.com/user/name/" . $clipText)->body(), true);
-                        if ($clipPlayerInfo[0]["lastSeen"]) if ((time() - $clipPlayerInfo[0]["lastSeen"]) < 100000) return $this->nick->text = $clipText;
-                        $this->noCheck[] = $clipText;
-                    })->start();
+                    if (fs::exists($path = $_ENV["APPDATA"] . "\\.vimeworld\\1.8.8\\assets\\skins\\skins\\" . substr($clipText, 0, 2) . "\\" . $clipText . ".png")) {
+                        if ((time() - fileatime($path)) < 100000) {
+                            $this->nick->text = $clipText;
+                            $this->noCheck[] = $clipText;
+                        }
+                    } else {
+                        new Thread(function () use ($clipText) {
+                            $checkHttpClient = new HttpClient();
+                            $clipPlayerInfo = json_decode($checkHttpClient->get("https://api.vimeworld.com/user/name/" . $clipText)->body(), true);
+                            if ($clipPlayerInfo[0]["lastSeen"]) if ((time() - $clipPlayerInfo[0]["lastSeen"]) < 100000)
+                                return uiLater(function () use ($clipText, $clipPlayerInfo) { $this->nick->text = ($nick = $clipPlayerInfo[0]["username"]) ? $nick : $clipText; });
+                            $this->noCheck[] = $clipText;
+                        })->start();
+                    }
                 }
             });
         } elseif (is_object($this->obs)) $this->observer("focused")->removeListener($this->obs);
@@ -605,6 +675,7 @@ class MainForm extends AbstractForm {
     {
         $this->combobox->selectedIndex = (str::isNumber($index = $this->ini->get("defaultTheme")) && $index <= count($this->combobox->items)) ? $index : 0;
         $this->comboboxServer->selectedIndex = (str::isNumber($index = $this->ini->get("defaultServer")) && $index <= count($this->comboboxServer->items)) ? $index : 0;
+        $this->checkboxAddInfo->stylesheets->add(".theme/little-checkbox.fx.css");
 
         if (in_array("runUpdater", $GLOBALS["argv"])) {
             $this->loadForm("UpdaterForm");
@@ -642,8 +713,30 @@ class MainForm extends AbstractForm {
         };
         $this->combobox->onCellRender($cellRender);
 
+        $count = count($exp = explode("\\", fs::abs("./")));
+        if ($count >= 2 || $count >= 3)
+            if ($exp[count($exp) - 2] == "Temp" || $exp[count($exp) - 3] == "Temp")
+                $this->showMessage("Предположительно, вы запустили программу прямиком из архива, не распаковав её (она находится в характерной для этого папке Temp)." . PHP_EOL. 
+                "Настоятельно рекомендую распаковать для удобного использования и сохранения всех настроек при последующих запусках.", "warning");
+
         $this->checkUpdates();
         $this->makeMinimizable(false);
+    }
+
+    /**
+     * @event checkboxAddInfo.click-Left 
+     */
+    function doCheckboxAddInfoClickLeft(UXMouseEvent $e = null)
+    {
+        $e->sender->text = ($e->sender->selected) ? "Доп. инфа (6 пункт):" : "Указать дополнительную информацию к жалобе (6-й пункт)";
+        $this->additionalInfo->visible = 
+        $this->additionalInfo->enabled = $e->sender->selected;
+        (!$e->sender->selected) ?: $this->additionalInfo->requestFocus();
+        if ($this->ini->get("notifiedBr") != "1") {
+            $this->showMessage('Для переноса строки используйте тег <br>, пример: "Строка<br>Новая строка".' . PHP_EOL .
+            "Это сообщение не будет показываться в дальнейшем!");
+            $this->changeIni("notifiedBr", "1");
+        }
     }
 
     /**
@@ -651,7 +744,7 @@ class MainForm extends AbstractForm {
      */
     function doCheckboxClickLeft(UXMouseEvent $e = null)
     {
-        $this->changeIni("checkbox", $this->checkbox->selected);
+        $this->changeIni("checkbox", $e->sender->selected);
     }
 
     /**
@@ -659,7 +752,7 @@ class MainForm extends AbstractForm {
      */
     function doCheckboxFollowClickLeft(UXMouseEvent $e = null)
     {    
-        $this->changeIni("checkboxFollow", $this->checkboxFollow->selected);
+        $this->changeIni("checkboxFollow", $e->sender->selected);
     }
 
     /**
@@ -667,8 +760,8 @@ class MainForm extends AbstractForm {
      */
     function doCheckboxObsClickLeft(UXMouseEvent $e = null)
     {
-        $this->changeIni("checkboxObs", $this->checkboxObs->selected);
-        $this->copyObserver($this->checkboxObs->selected);
+        $this->changeIni("checkboxObs", $e->sender->selected);
+        $this->copyObserver($e->sender->selected);
     }
 
     /**
@@ -741,14 +834,14 @@ class MainForm extends AbstractForm {
      */
     function doComboboxAction(UXEvent $e = null)
     {
-        if ($this->combobox->popupVisible) {
-            $this->combobox->hidePopup();
-            $this->changeIni("defaultTheme", $this->combobox->selectedIndex);
+        if ($e->sender->popupVisible) {
+            $e->sender->hidePopup();
+            $this->changeIni("defaultTheme", $e->sender->selectedIndex);
             Animation::fadeOut($this, 350, function () {
                 $this->changeTheme($this->combobox->selectedIndex);
                 Animation::fadeIn($this, 350);
             });
-        } else $this->changeTheme($this->combobox->selectedIndex);
+        } else $this->changeTheme($e->sender->selectedIndex);
         $this->panel->requestFocus();
     }
 
@@ -757,8 +850,8 @@ class MainForm extends AbstractForm {
      */
     function doComboboxServerAction(UXEvent $e = null)
     {
-        if ($this->comboboxServer->popupVisible) $this->changeIni("defaultServer", $this->comboboxServer->selectedIndex);
-        $this->defaultServer = $this->comboboxServer->selected;
+        if ($e->sender->popupVisible) $this->changeIni("defaultServer", $e->sender->selectedIndex);
+        $this->defaultServer = $e->sender->selected;
         $this->panel->requestFocus();
     }
 
@@ -768,7 +861,7 @@ class MainForm extends AbstractForm {
     function doComboboxServerClickLeft(UXMouseEvent $e = null)
     {    
         if ($this->checkboxSelect->selected) {
-            if ($this->comboboxServer->popupVisible) $this->comboboxServer->hidePopup();
+            if ($e->sender->popupVisible) $e->sender->hidePopup();
             $this->toast("Вы не можете менять сервер при активном ручном выборе скриншотов!", "1s");
         }
     }

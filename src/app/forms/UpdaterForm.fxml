@@ -28,7 +28,7 @@
       </columns>
     </TableView>
     <Data cursor="DEFAULT" enabled="1" id="data-table" visible="1"/>
-    <Panel backgroundColor="#e0f4e5" borderColor="#666666" borderRadius="0" borderStyle="SOLID" borderWidth="0" focusTraversable="false" id="panel" layoutX="0" layoutY="0" maxHeight="-1" maxWidth="-1" minHeight="-1" minWidth="-1" prefHeight="27" prefWidth="360" styleClass="" titleColor="#4d4d4d" titleOffset="15" titlePosition="TOP_LEFT">
+    <Panel backgroundColor="#e0f4e5" borderColor="#666666" borderRadius="0" borderStyle="SOLID" borderWidth="0" focusTraversable="false" id="panel" layoutX="1" layoutY="1" maxHeight="-1" maxWidth="-1" minHeight="-1" minWidth="-1" prefHeight="27" prefWidth="358" styleClass="" titleColor="#4d4d4d" titleOffset="15" titlePosition="TOP_LEFT">
       <children>
         <ImageViewEx autoSize="false" centered="false" focusTraversable="false" height="17" id="imageIcon" layoutX="6" layoutY="5" mosaic="false" mosaicGap="0" proportional="false" stretch="true" styleClass="" textFill="#000000" width="17">
           <font>
@@ -42,7 +42,7 @@
           </font>
         </LabelEx>
         <Data cursor="DEFAULT" enabled="1" id="data-labelProgTitle" visible="1"/>
-        <FlatButton alignment="CENTER" clickColor="#bc5c64" color="#6680e600" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" hoverColor="#824f4f" id="buttonClose" layoutX="310" layoutY="0" prefHeight="27" prefWidth="50" style="-fx-background-radius: 0px;" styleClass="x-flat-button " text="✕" textAlignment="CENTER" textFill="#b3b3b3" underline="false" wrapText="false">
+        <FlatButton alignment="CENTER" clickColor="#bc5c64" color="#6680e600" contentDisplay="LEFT" ellipsisString="..." focusTraversable="true" graphicTextGap="4" hoverColor="#824f4f" id="buttonClose" layoutX="308" layoutY="0" prefHeight="27" prefWidth="50" style="-fx-background-radius: 0px;" styleClass="x-flat-button " text="✕" textAlignment="CENTER" textFill="#b3b3b3" underline="false" wrapText="false">
           <font>
             <Font name="System Regular" size="16"/>
           </font>

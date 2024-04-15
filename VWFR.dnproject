@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project author="John" authorOS="Windows 10" createdAt="1638965915264" ideName="DevelNext" ideVersion="16.7.0" ideVersionHash="2017103112" name="VWFR" packageName="app" template="ide\project\templates\DefaultGuiProjectTemplate" updatedAt="1684083543066">
+<project author="John" authorOS="Windows 10" createdAt="1638965915264" ideName="DevelNext" ideVersion="16.7.0" ideVersionHash="2017103112" name="VWFR" packageName="app" template="ide\project\templates\DefaultGuiProjectTemplate" updatedAt="1713016858653">
   <tree>
     <expanded>
     <path src=""/>
@@ -16,14 +16,18 @@
   <file src="VWFR.dnproject"/>
     <file src="src/app/modules/MainModule.php"/>
     <file selected="1" src="src/app/forms/MainForm.php"/>
+    <file src="src/app/forms/PreloaderForm.php"/>
     <file src="src/app/forms/CloudflareForm.php"/>
     <file src="src/app/forms/MessageForm.php"/>
     <file src="src/app/forms/PreviewForm.php"/>
     <file src="src/app/forms/ConfirmPostForm.php"/>
     <file src="src/app/forms/NeedUpdateForm.php"/>
     <file src="src/app/forms/UpdaterForm.php"/>
-    <file src="src/.theme/3-theme.fx.css"/>
     <file src="src/.theme/2-theme.fx.css"/>
+    <file src="src/.theme/1-theme.fx.css"/>
+    <file src="src/.theme/style.fx.css"/>
+    <file src="src/.theme/tooltip.fx.css"/>
+    <file src="src/.theme/0-theme.fx.css"/>
   </openedFiles>
   <files/>
   <behaviours>
